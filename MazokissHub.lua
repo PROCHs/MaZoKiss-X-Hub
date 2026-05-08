@@ -155,7 +155,7 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     Farm = Window:AddTab({ Title = "Farm", Icon = "sword" }),
     Visual = Window:AddTab({ Title = "Visual", Icon = "monitor" }),
-    Webhook = Window:AddTab({ Title = "Webhook", Icon = "webhook" }),
+    Webhook = Window:AddTab({ Title = "Webhook", Icon = "globe" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
