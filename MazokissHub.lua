@@ -508,23 +508,21 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
     return oldNamecall(self, ...)
 end))
 
--- Auto Skip Loop
+-- ✅ Auto Skip Loop แก้แล้ว ลบเงื่อนไข Lifts ออก
 spawn(function()
     while true do
         wait(5)
         if Options.AutoSkip.Value then
-            if workspace:FindFirstChild("Lifts") then
-                pcall(function()
-                    local args = {
+            pcall(function()
+                local args = {
+                    [1] = {
                         [1] = {
-                            [1] = {
-                                [1] = "\226\129\130("
-                            }
+                            [1] = "\226\129\130("
                         }
                     }
-                    Remote:FireServer(unpack(args))
-                end)
-            end
+                }
+                Remote:FireServer(unpack(args))
+            end)
         end
     end
 end)
