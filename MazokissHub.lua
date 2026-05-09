@@ -300,7 +300,7 @@ Tabs.Farm:AddParagraph({
 
 local AutoSkipToggle = Tabs.Farm:AddToggle("AutoSkip", {
     Title = "Auto Skip",
-    Description = "กดปุ่ม Auto Skip ในเกมอัตโนมัติ",
+    Description = "Skip Wave อัตโนมัติ",
     Default = Config.AutoSkip
 })
 AutoSkipToggle:OnChanged(function()
@@ -509,26 +509,22 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
 end))
 
 -- Auto Skip Loop
-local autoSkipClicked = false
 spawn(function()
     while true do
-        wait(1)
+        wait(5)
         if Options.AutoSkip.Value then
-            pcall(function()
-                local btn = player.PlayerGui.Match.TopFrame.AutoSkip.OnAndOff
-                if btn and not autoSkipClicked then
-                    local pos = btn.AbsolutePosition
-                    local size = btn.AbsoluteSize
-                    mousemoveabs(pos.X + size.X / 2, pos.Y + size.Y / 2 + 54)
-                    wait(1)
-                    mouse1press()
-                    wait(0.1)
-                    mouse1release()
-                    autoSkipClicked = true
-                end
-            end)
-        else
-            autoSkipClicked = false
+            if workspace:FindFirstChild("Lifts") then
+                pcall(function()
+                    local args = {
+                        [1] = {
+                            [1] = {
+                                [1] = "\226\129\130("
+                            }
+                        }
+                    }
+                    Remote:FireServer(unpack(args))
+                end)
+            end
         end
     end
 end)
@@ -583,7 +579,6 @@ spawn(function()
                 end
             else
                 sentLobby = false
-                autoSkipClicked = false -- ✅ reset เมื่อออกจากเกมเพื่อกดใหม่รอบหน้า
             end
         end
     end
