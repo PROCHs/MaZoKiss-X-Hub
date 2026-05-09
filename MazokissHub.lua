@@ -521,7 +521,9 @@ spawn(function()
                     local size = btn.AbsoluteSize
                     mousemoveabs(pos.X + size.X / 2, pos.Y + size.Y / 2 + 54)
                     wait(1)
-                    mouse1click()
+                    mouse1press()
+                    wait(0.1)
+                    mouse1release()
                     autoSkipClicked = true
                 end
             end)
