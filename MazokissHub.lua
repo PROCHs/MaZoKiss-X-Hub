@@ -2,10 +2,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
 
 local player = Players.LocalPlayer
 
 local req = syn and syn.request or http_request or request
+
+local TargetPlaceID = 93712201161812
 
 local ConfigName = "MazokissConfig.json"
 
@@ -14,7 +17,12 @@ local Config = {
     AutoQueue = false,
     AutoSummon = false,
     WhiteScreen = false,
-    Webhook = ""
+    Webhook = "",
+    SellBasic = false,
+    SellUncommon = false,
+    SellRare = false,
+    SellEpic = false,
+    SellLegendary = false
 }
 
 pcall(function()
@@ -128,6 +136,112 @@ local function RemoveWhiteScreen()
 end
 
 --========================
+-- RARITY DETECTION
+--========================
+
+local function GetRarity(unit)
+    local tf = unit:FindFirstChild("TroopsFrame")
+    if not tf then return nil end
+    local rg = tf:FindFirstChild("RarityGradient")
+    if not rg then return nil end
+    local colorStr = tostring(rg.Color)
+
+    if colorStr:find("0.890196") then
+        return "Basic"
+    elseif colorStr:find("0.615686") then
+        return "Legendary"
+    elseif colorStr:find("0 0.85098 0") then
+        return "Epic"
+    elseif colorStr:find("0 0 0.85098") then
+        return "Rare"
+    elseif colorStr:find("0 0 1 0 0 1 0 0.694118 0 0") then
+        return "Uncommon"
+    end
+    return nil
+end
+
+local function SellUnits()
+    local lobby = player.PlayerGui:FindFirstChild("Lobby")
+    if not lobby then
+        Fluent:Notify({
+            Title = "Sell",
+            Content = "ไม่เจอ Lobby UI กรุณาอยู่ในล็อบบี้ก่อนครับ",
+            Duration = 3
+        })
+        return
+    end
+
+    local unitFrame = lobby:FindFirstChild("UnitFrame")
+    if not unitFrame then return end
+    local unitList = unitFrame:FindFirstChild("UnitList")
+    if not unitList then return end
+
+    local totalSold = 0
+
+    while true do
+        local soldCount = 0
+
+        for _, row in pairs(unitList:GetChildren()) do
+            if row.Name:find("Row") then
+                for _, unit in pairs(row:GetChildren()) do
+                    if unit:IsA("Frame") then
+                        local rarity = GetRarity(unit)
+                        if rarity then
+                            local shouldSell = (
+                                (rarity == "Basic"     and Config.SellBasic) or
+                                (rarity == "Uncommon"  and Config.SellUncommon) or
+                                (rarity == "Rare"      and Config.SellRare) or
+                                (rarity == "Epic"      and Config.SellEpic) or
+                                (rarity == "Legendary" and Config.SellLegendary)
+                            )
+                            if shouldSell then
+                                pcall(function()
+                                    local args1 = {
+                                        [1] = {
+                                            [1] = {
+                                                [1] = "\226\129\130E",
+                                                [2] = { [1] = unit.Name }
+                                            }
+                                        }
+                                    }
+                                    local args2 = {
+                                        [1] = {
+                                            [1] = {
+                                                [1] = "\226\129\130P",
+                                                [2] = { [1] = unit.Name }
+                                            }
+                                        }
+                                    }
+                                    ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args1))
+                                    wait(0.1)
+                                    ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args2))
+                                    soldCount = soldCount + 1
+                                    wait(0.2)
+                                end)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        totalSold = totalSold + soldCount
+
+        if soldCount == 0 then
+            break
+        end
+
+        wait(0.5)
+    end
+
+    Fluent:Notify({
+        Title = "Sell",
+        Content = "ขายไปทั้งหมด " .. totalSold .. " ตัวครับ ✅",
+        Duration = 3
+    })
+end
+
+--========================
 -- FLUENT UI
 --========================
 
@@ -152,10 +266,11 @@ local Window = Fluent:CreateWindow({
 })
 
 local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-    Farm = Window:AddTab({ Title = "Farm", Icon = "sword" }),
-    Visual = Window:AddTab({ Title = "Visual", Icon = "monitor" }),
-    Webhook = Window:AddTab({ Title = "Webhook", Icon = "globe" }),
+    Main     = Window:AddTab({ Title = "Main",     Icon = "home" }),
+    Farm     = Window:AddTab({ Title = "Farm",     Icon = "sword" }),
+    Sell     = Window:AddTab({ Title = "Sell",     Icon = "tag" }),
+    Visual   = Window:AddTab({ Title = "Visual",   Icon = "monitor" }),
+    Webhook  = Window:AddTab({ Title = "Webhook",  Icon = "globe" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
@@ -189,7 +304,6 @@ local AutoSkipToggle = Tabs.Farm:AddToggle("AutoSkip", {
     Description = "Skip Wave อัตโนมัติ",
     Default = Config.AutoSkip
 })
-
 AutoSkipToggle:OnChanged(function()
     Config.AutoSkip = Options.AutoSkip.Value
     SaveConfig()
@@ -200,23 +314,87 @@ local AutoQueueToggle = Tabs.Farm:AddToggle("AutoQueue", {
     Description = "วาปเข้า Lift อัตโนมัติ",
     Default = Config.AutoQueue
 })
-
 AutoQueueToggle:OnChanged(function()
     Config.AutoQueue = Options.AutoQueue.Value
     SaveConfig()
 end)
 
--- ✅ เพิ่ม Auto Summon
 local AutoSummonToggle = Tabs.Farm:AddToggle("AutoSummon", {
     Title = "Auto Summon",
-    Description = "Summon อัตโนมัติ",
+    Description = "กด Summon ด้วยมือ 1 ครั้งก่อนเปิดครับ",
     Default = Config.AutoSummon
 })
-
 AutoSummonToggle:OnChanged(function()
     Config.AutoSummon = Options.AutoSummon.Value
     SaveConfig()
 end)
+
+--========================
+-- SELL TAB
+--========================
+
+Tabs.Sell:AddParagraph({
+    Title = "Sell Unit",
+    Content = "เลือก Rarity ที่อยากขาย แล้วกด Sell Now"
+})
+
+local SellBasicToggle = Tabs.Sell:AddToggle("SellBasic", {
+    Title = "Basic",
+    Description = "ขาย Unit ระดับ Basic",
+    Default = Config.SellBasic
+})
+SellBasicToggle:OnChanged(function()
+    Config.SellBasic = Options.SellBasic.Value
+    SaveConfig()
+end)
+
+local SellUncommonToggle = Tabs.Sell:AddToggle("SellUncommon", {
+    Title = "Uncommon",
+    Description = "ขาย Unit ระดับ Uncommon",
+    Default = Config.SellUncommon
+})
+SellUncommonToggle:OnChanged(function()
+    Config.SellUncommon = Options.SellUncommon.Value
+    SaveConfig()
+end)
+
+local SellRareToggle = Tabs.Sell:AddToggle("SellRare", {
+    Title = "Rare",
+    Description = "ขาย Unit ระดับ Rare",
+    Default = Config.SellRare
+})
+SellRareToggle:OnChanged(function()
+    Config.SellRare = Options.SellRare.Value
+    SaveConfig()
+end)
+
+local SellEpicToggle = Tabs.Sell:AddToggle("SellEpic", {
+    Title = "Epic",
+    Description = "ขาย Unit ระดับ Epic",
+    Default = Config.SellEpic
+})
+SellEpicToggle:OnChanged(function()
+    Config.SellEpic = Options.SellEpic.Value
+    SaveConfig()
+end)
+
+local SellLegendaryToggle = Tabs.Sell:AddToggle("SellLegendary", {
+    Title = "Legendary",
+    Description = "ขาย Unit ระดับ Legendary",
+    Default = Config.SellLegendary
+})
+SellLegendaryToggle:OnChanged(function()
+    Config.SellLegendary = Options.SellLegendary.Value
+    SaveConfig()
+end)
+
+Tabs.Sell:AddButton({
+    Title = "Sell Now",
+    Description = "ขาย Unit ที่เลือกทั้งหมดทันที",
+    Callback = function()
+        SellUnits()
+    end
+})
 
 --========================
 -- VISUAL TAB
@@ -232,7 +410,6 @@ local WhiteScreenToggle = Tabs.Visual:AddToggle("WhiteScreen", {
     Description = "ลด Graphic และทำให้จอขาวเพิ่ม FPS",
     Default = Config.WhiteScreen
 })
-
 WhiteScreenToggle:OnChanged(function()
     Config.WhiteScreen = Options.WhiteScreen.Value
     SaveConfig()
@@ -307,7 +484,19 @@ SaveManager:BuildConfigSection(Tabs.Settings)
 --========================
 
 local sentLobby = false
+local SummonArgs = nil
 
+local Remote = ReplicatedStorage.NetworkingContainer.DataRemote
+local OldFire = Remote.FireServer
+Remote.FireServer = function(self, ...)
+    local args = {...}
+    if args[1] and args[1][1] and args[1][1][1] == "\226\129\130J" then
+        SummonArgs = args
+    end
+    return OldFire(self, ...)
+end
+
+-- Auto Skip Loop
 spawn(function()
     while true do
         wait(5)
@@ -329,6 +518,7 @@ spawn(function()
     end
 end)
 
+-- Auto Queue Loop
 spawn(function()
     while true do
         wait(2)
@@ -383,24 +573,23 @@ spawn(function()
     end
 end)
 
--- ✅ Loop Auto Summon
+-- Auto Summon Loop
 spawn(function()
     while true do
         wait(1)
         if Options.AutoSummon.Value then
-            pcall(function()
-                local args = {
-                    [1] = {
-                        [1] = {
-                            [1] = "\226\129\130J"
-                        }
-                    }
-                }
-                ReplicatedStorage
-                    .NetworkingContainer
-                    .DataRemote
-                    :FireServer(unpack(args))
-            end)
+            if SummonArgs then
+                pcall(function()
+                    Remote:FireServer(unpack(SummonArgs))
+                end)
+            else
+                Fluent:Notify({
+                    Title = "Auto Summon",
+                    Content = "กรุณากด Summon ด้วยมือ 1 ครั้งก่อนครับ",
+                    Duration = 3
+                })
+                wait(5)
+            end
         end
     end
 end)
@@ -422,3 +611,29 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig()
+
+-- เช็คแมพตอนโหลด
+task.spawn(function()
+    wait(3)
+    if game.PlaceId ~= TargetPlaceID then
+        Fluent:Notify({
+            Title = "Teleport",
+            Content = "กำลังเข้าแมพ TTD...",
+            Duration = 3
+        })
+        wait(2)
+        TeleportService:Teleport(TargetPlaceID)
+    elseif workspace:FindFirstChild("Lifts") then
+        Fluent:Notify({
+            Title = "✅ ล็อบบี้",
+            Content = "อยู่ในล็อบบี้แล้วครับ",
+            Duration = 3
+        })
+    else
+        Fluent:Notify({
+            Title = "⚔️ In Game",
+            Content = "กำลังเล่นอยู่ ไม่ Teleport ครับ",
+            Duration = 3
+        })
+    end
+end)
