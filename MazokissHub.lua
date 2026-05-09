@@ -19,7 +19,8 @@ local Config = {
     SellUncommon = false,
     SellRare = false,
     SellEpic = false,
-    SellLegendary = false
+    SellLegendary = false,
+    SellMythic = false
 }
 
 pcall(function()
@@ -147,6 +148,8 @@ local function GetRarity(unit)
         return "Basic"
     elseif colorStr:find("0.615686") then
         return "Legendary"
+    elseif colorStr:find("0 1 0 0") then
+        return "Mythic"
     elseif colorStr:find("0 0.85098 0") then
         return "Epic"
     elseif colorStr:find("0 0 0.85098") then
@@ -186,7 +189,8 @@ local function SellUnits()
                             (rarity == "Uncommon"  and Config.SellUncommon) or
                             (rarity == "Rare"      and Config.SellRare) or
                             (rarity == "Epic"      and Config.SellEpic) or
-                            (rarity == "Legendary" and Config.SellLegendary)
+                            (rarity == "Legendary" and Config.SellLegendary) or
+                            (rarity == "Mythic"    and Config.SellMythic)
                         )
                         if shouldSell then
                             table.insert(sellList, unit.Name)
@@ -214,7 +218,6 @@ local function SellUnits()
         for j = i, math.min(i + chunkSize - 1, #sellList) do
             chunk[j - i + 1] = sellList[j]
         end
-
         pcall(function()
             local args = {
                 [1] = {
@@ -227,7 +230,6 @@ local function SellUnits()
             ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args))
             totalSold = totalSold + #chunk
         end)
-
         wait(0.3)
     end
 
@@ -298,7 +300,7 @@ Tabs.Farm:AddParagraph({
 
 local AutoSkipToggle = Tabs.Farm:AddToggle("AutoSkip", {
     Title = "Auto Skip",
-    Description = "Skip Wave อัตโนมัติ",
+    Description = "กดปุ่ม Auto Skip ในเกมอัตโนมัติ",
     Default = Config.AutoSkip
 })
 AutoSkipToggle:OnChanged(function()
@@ -382,6 +384,16 @@ local SellLegendaryToggle = Tabs.Sell:AddToggle("SellLegendary", {
 })
 SellLegendaryToggle:OnChanged(function()
     Config.SellLegendary = Options.SellLegendary.Value
+    SaveConfig()
+end)
+
+local SellMythicToggle = Tabs.Sell:AddToggle("SellMythic", {
+    Title = "Mythic",
+    Description = "ขาย Unit ระดับ Mythic",
+    Default = Config.SellMythic
+})
+SellMythicToggle:OnChanged(function()
+    Config.SellMythic = Options.SellMythic.Value
     SaveConfig()
 end)
 
@@ -497,22 +509,24 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
 end))
 
 -- Auto Skip Loop
+local autoSkipClicked = false
 spawn(function()
     while true do
-        wait(5)
+        wait(1)
         if Options.AutoSkip.Value then
-            if workspace:FindFirstChild("Lifts") then
-                pcall(function()
-                    local args = {
-                        [1] = {
-                            [1] = {
-                                [1] = "\226\129\130("
-                            }
-                        }
-                    }
-                    Remote:FireServer(unpack(args))
-                end)
-            end
+            pcall(function()
+                local btn = player.PlayerGui.Match.TopFrame.AutoSkip.OnAndOff
+                if btn and not autoSkipClicked then
+                    local pos = btn.AbsolutePosition
+                    local size = btn.AbsoluteSize
+                    mousemoveabs(pos.X + size.X / 2, pos.Y + size.Y / 2 + 54)
+                    wait(1)
+                    mouse1click()
+                    autoSkipClicked = true
+                end
+            end)
+        else
+            autoSkipClicked = false
         end
     end
 end)
@@ -567,6 +581,7 @@ spawn(function()
                 end
             else
                 sentLobby = false
+                autoSkipClicked = false -- ✅ reset เมื่อออกจากเกมเพื่อกดใหม่รอบหน้า
             end
         end
     end
