@@ -501,7 +501,7 @@ spawn(function()
     while true do
         wait(5)
         if Options.AutoSkip.Value then
-            if not workspace:FindFirstChild("Lifts") then
+            if workspace:FindFirstChild("Lifts") then
                 pcall(function()
                     local args = {
                         [1] = {
