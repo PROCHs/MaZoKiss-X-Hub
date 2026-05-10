@@ -19,8 +19,7 @@ local Config = {
     SellUncommon = false,
     SellRare = false,
     SellEpic = false,
-    SellLegendary = false,
-    SellMythic = false
+    SellLegendary = false
 }
 
 pcall(function()
@@ -148,8 +147,6 @@ local function GetRarity(unit)
         return "Basic"
     elseif colorStr:find("0.615686") then
         return "Legendary"
-    elseif colorStr:find("0 1 0 0") then
-        return "Mythic"
     elseif colorStr:find("0 0.85098 0") then
         return "Epic"
     elseif colorStr:find("0 0 0.85098") then
@@ -189,8 +186,7 @@ local function SellUnits()
                             (rarity == "Uncommon"  and Config.SellUncommon) or
                             (rarity == "Rare"      and Config.SellRare) or
                             (rarity == "Epic"      and Config.SellEpic) or
-                            (rarity == "Legendary" and Config.SellLegendary) or
-                            (rarity == "Mythic"    and Config.SellMythic)
+                            (rarity == "Legendary" and Config.SellLegendary)
                         )
                         if shouldSell then
                             table.insert(sellList, unit.Name)
@@ -218,6 +214,7 @@ local function SellUnits()
         for j = i, math.min(i + chunkSize - 1, #sellList) do
             chunk[j - i + 1] = sellList[j]
         end
+
         pcall(function()
             local args = {
                 [1] = {
@@ -230,6 +227,7 @@ local function SellUnits()
             ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args))
             totalSold = totalSold + #chunk
         end)
+
         wait(0.3)
     end
 
@@ -298,32 +296,29 @@ Tabs.Farm:AddParagraph({
     Content = "ฟังชั่นสำหรับ Farm อัตโนมัติ"
 })
 
-local AutoSkipToggle = Tabs.Farm:AddToggle("AutoSkip", {
+Tabs.Farm:AddToggle("AutoSkip", {
     Title = "Auto Skip",
     Description = "Skip Wave อัตโนมัติ",
     Default = Config.AutoSkip
-})
-AutoSkipToggle:OnChanged(function()
+}):OnChanged(function()
     Config.AutoSkip = Options.AutoSkip.Value
     SaveConfig()
 end)
 
-local AutoQueueToggle = Tabs.Farm:AddToggle("AutoQueue", {
+Tabs.Farm:AddToggle("AutoQueue", {
     Title = "Auto Queue",
     Description = "วาปเข้า Lift อัตโนมัติ",
     Default = Config.AutoQueue
-})
-AutoQueueToggle:OnChanged(function()
+}):OnChanged(function()
     Config.AutoQueue = Options.AutoQueue.Value
     SaveConfig()
 end)
 
-local AutoSummonToggle = Tabs.Farm:AddToggle("AutoSummon", {
+Tabs.Farm:AddToggle("AutoSummon", {
     Title = "Auto Summon",
     Description = "กด Summon ด้วยมือ 1 ครั้งก่อนเปิดครับ",
     Default = Config.AutoSummon
-})
-AutoSummonToggle:OnChanged(function()
+}):OnChanged(function()
     Config.AutoSummon = Options.AutoSummon.Value
     SaveConfig()
 end)
@@ -337,63 +332,48 @@ Tabs.Sell:AddParagraph({
     Content = "เลือก Rarity ที่อยากขาย แล้วกด Sell Now"
 })
 
-local SellBasicToggle = Tabs.Sell:AddToggle("SellBasic", {
+Tabs.Sell:AddToggle("SellBasic", {
     Title = "Basic",
     Description = "ขาย Unit ระดับ Basic",
     Default = Config.SellBasic
-})
-SellBasicToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellBasic = Options.SellBasic.Value
     SaveConfig()
 end)
 
-local SellUncommonToggle = Tabs.Sell:AddToggle("SellUncommon", {
+Tabs.Sell:AddToggle("SellUncommon", {
     Title = "Uncommon",
     Description = "ขาย Unit ระดับ Uncommon",
     Default = Config.SellUncommon
-})
-SellUncommonToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellUncommon = Options.SellUncommon.Value
     SaveConfig()
 end)
 
-local SellRareToggle = Tabs.Sell:AddToggle("SellRare", {
+Tabs.Sell:AddToggle("SellRare", {
     Title = "Rare",
     Description = "ขาย Unit ระดับ Rare",
     Default = Config.SellRare
-})
-SellRareToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellRare = Options.SellRare.Value
     SaveConfig()
 end)
 
-local SellEpicToggle = Tabs.Sell:AddToggle("SellEpic", {
+Tabs.Sell:AddToggle("SellEpic", {
     Title = "Epic",
     Description = "ขาย Unit ระดับ Epic",
     Default = Config.SellEpic
-})
-SellEpicToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellEpic = Options.SellEpic.Value
     SaveConfig()
 end)
 
-local SellLegendaryToggle = Tabs.Sell:AddToggle("SellLegendary", {
+Tabs.Sell:AddToggle("SellLegendary", {
     Title = "Legendary",
     Description = "ขาย Unit ระดับ Legendary",
     Default = Config.SellLegendary
-})
-SellLegendaryToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellLegendary = Options.SellLegendary.Value
-    SaveConfig()
-end)
-
-local SellMythicToggle = Tabs.Sell:AddToggle("SellMythic", {
-    Title = "Mythic",
-    Description = "ขาย Unit ระดับ Mythic",
-    Default = Config.SellMythic
-})
-SellMythicToggle:OnChanged(function()
-    Config.SellMythic = Options.SellMythic.Value
     SaveConfig()
 end)
 
@@ -414,12 +394,11 @@ Tabs.Visual:AddParagraph({
     Content = "ปรับกราฟฟิคเพื่อเพิ่ม FPS"
 })
 
-local WhiteScreenToggle = Tabs.Visual:AddToggle("WhiteScreen", {
+Tabs.Visual:AddToggle("WhiteScreen", {
     Title = "White Screen / FPS Boost",
     Description = "ลด Graphic และทำให้จอขาวเพิ่ม FPS",
     Default = Config.WhiteScreen
-})
-WhiteScreenToggle:OnChanged(function()
+}):OnChanged(function()
     Config.WhiteScreen = Options.WhiteScreen.Value
     SaveConfig()
     if Config.WhiteScreen then
@@ -508,26 +487,26 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
     return oldNamecall(self, ...)
 end))
 
--- ✅ Auto Skip Loop แก้แล้ว ลบเงื่อนไข Lifts ออก
 spawn(function()
     while true do
         wait(5)
         if Options.AutoSkip.Value then
-            pcall(function()
-                local args = {
-                    [1] = {
+            if not workspace:FindFirstChild("Lifts") then
+                pcall(function()
+                    local args = {
                         [1] = {
-                            [1] = "\226\129\130("
+                            [1] = {
+                                [1] = "\226\129\130("
+                            }
                         }
                     }
-                }
-                Remote:FireServer(unpack(args))
-            end)
+                    Remote:FireServer(unpack(args))
+                end)
+            end
         end
     end
 end)
 
--- Auto Queue Loop
 spawn(function()
     while true do
         wait(2)
@@ -582,7 +561,6 @@ spawn(function()
     end
 end)
 
--- Auto Summon Loop
 spawn(function()
     while true do
         wait(1)
