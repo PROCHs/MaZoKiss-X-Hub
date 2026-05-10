@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
+local VIS = game:GetService("VirtualInputManager")
 
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
@@ -14,6 +15,7 @@ local Config = {
     AutoQueue = false,
     AutoSummon = false,
     WhiteScreen = false,
+    AutoHide = false,
     Webhook = "",
     SellBasic = false,
     SellUncommon = false,
@@ -35,6 +37,12 @@ local function SaveConfig()
             writefile(ConfigName, HttpService:JSONEncode(Config))
         end
     end)
+end
+
+local function ToggleUI()
+    VIS:SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
+    task.wait(0.1)
+    VIS:SendKeyEvent(false, Enum.KeyCode.LeftControl, false, game)
 end
 
 --========================
@@ -59,9 +67,9 @@ local function ApplyWhiteScreen()
 
         Lighting.GlobalShadows = false
         Lighting.FogEnd = 999999999
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        Lighting.Brightness = 10
+        Lighting.Ambient = Color3.fromRGB(200, 200, 200)
+        Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
+        Lighting.Brightness = 2
         Lighting.ClockTime = 12
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 
@@ -262,10 +270,22 @@ Tabs.Main:AddParagraph({
     Content = "Toilet Tower Defense Farm Script"
 })
 
-Tabs.Main:AddParagraph({
+Tabs.Main:AddButton({
     Title = "Toggle UI",
-    Content = "กด LeftCtrl เพื่อเปิด/ปิด UI"
+    Description = "เปิด/ปิด UI",
+    Callback = function()
+        ToggleUI()
+    end
 })
+
+Tabs.Main:AddToggle("AutoHide", {
+    Title = "Auto Hide UI",
+    Description = "ซ่อน UI อัตโนมัติตอนโหลดสคริปต์",
+    Default = Config.AutoHide
+}):OnChanged(function()
+    Config.AutoHide = Options.AutoHide.Value
+    SaveConfig()
+end)
 
 --========================
 -- FARM TAB
@@ -276,32 +296,29 @@ Tabs.Farm:AddParagraph({
     Content = "ฟังชั่นสำหรับ Farm อัตโนมัติ"
 })
 
-local AutoSkipToggle = Tabs.Farm:AddToggle("AutoSkip", {
+Tabs.Farm:AddToggle("AutoSkip", {
     Title = "Auto Skip",
     Description = "Skip Wave อัตโนมัติ",
     Default = Config.AutoSkip
-})
-AutoSkipToggle:OnChanged(function()
+}):OnChanged(function()
     Config.AutoSkip = Options.AutoSkip.Value
     SaveConfig()
 end)
 
-local AutoQueueToggle = Tabs.Farm:AddToggle("AutoQueue", {
+Tabs.Farm:AddToggle("AutoQueue", {
     Title = "Auto Queue",
     Description = "วาปเข้า Lift อัตโนมัติ",
     Default = Config.AutoQueue
-})
-AutoQueueToggle:OnChanged(function()
+}):OnChanged(function()
     Config.AutoQueue = Options.AutoQueue.Value
     SaveConfig()
 end)
 
-local AutoSummonToggle = Tabs.Farm:AddToggle("AutoSummon", {
+Tabs.Farm:AddToggle("AutoSummon", {
     Title = "Auto Summon",
     Description = "กด Summon ด้วยมือ 1 ครั้งก่อนเปิดครับ",
     Default = Config.AutoSummon
-})
-AutoSummonToggle:OnChanged(function()
+}):OnChanged(function()
     Config.AutoSummon = Options.AutoSummon.Value
     SaveConfig()
 end)
@@ -315,62 +332,56 @@ Tabs.Sell:AddParagraph({
     Content = "เลือก Rarity ที่อยากขาย แล้วกด Sell Now\nกด Sell ด้วยมือ 1 ครั้งก่อนใช้งานครับ"
 })
 
-local SellBasicToggle = Tabs.Sell:AddToggle("SellBasic", {
+Tabs.Sell:AddToggle("SellBasic", {
     Title = "Basic",
     Description = "ขาย Unit ระดับ Basic",
     Default = Config.SellBasic
-})
-SellBasicToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellBasic = Options.SellBasic.Value
     SaveConfig()
 end)
 
-local SellUncommonToggle = Tabs.Sell:AddToggle("SellUncommon", {
+Tabs.Sell:AddToggle("SellUncommon", {
     Title = "Uncommon",
     Description = "ขาย Unit ระดับ Uncommon",
     Default = Config.SellUncommon
-})
-SellUncommonToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellUncommon = Options.SellUncommon.Value
     SaveConfig()
 end)
 
-local SellRareToggle = Tabs.Sell:AddToggle("SellRare", {
+Tabs.Sell:AddToggle("SellRare", {
     Title = "Rare",
     Description = "ขาย Unit ระดับ Rare",
     Default = Config.SellRare
-})
-SellRareToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellRare = Options.SellRare.Value
     SaveConfig()
 end)
 
-local SellEpicToggle = Tabs.Sell:AddToggle("SellEpic", {
+Tabs.Sell:AddToggle("SellEpic", {
     Title = "Epic",
     Description = "ขาย Unit ระดับ Epic",
     Default = Config.SellEpic
-})
-SellEpicToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellEpic = Options.SellEpic.Value
     SaveConfig()
 end)
 
-local SellLegendaryToggle = Tabs.Sell:AddToggle("SellLegendary", {
+Tabs.Sell:AddToggle("SellLegendary", {
     Title = "Legendary",
     Description = "ขาย Unit ระดับ Legendary",
     Default = Config.SellLegendary
-})
-SellLegendaryToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellLegendary = Options.SellLegendary.Value
     SaveConfig()
 end)
 
-local SellMythicToggle = Tabs.Sell:AddToggle("SellMythic", {
+Tabs.Sell:AddToggle("SellMythic", {
     Title = "Mythic",
     Description = "ขาย Unit ระดับ Mythic",
     Default = Config.SellMythic
-})
-SellMythicToggle:OnChanged(function()
+}):OnChanged(function()
     Config.SellMythic = Options.SellMythic.Value
     SaveConfig()
 end)
@@ -392,12 +403,11 @@ Tabs.Visual:AddParagraph({
     Content = "ปรับกราฟฟิคเพื่อเพิ่ม FPS"
 })
 
-local WhiteScreenToggle = Tabs.Visual:AddToggle("WhiteScreen", {
+Tabs.Visual:AddToggle("WhiteScreen", {
     Title = "White Screen / FPS Boost",
     Description = "ลด Graphic และทำให้จอขาวเพิ่ม FPS",
     Default = Config.WhiteScreen
-})
-WhiteScreenToggle:OnChanged(function()
+}):OnChanged(function()
     Config.WhiteScreen = Options.WhiteScreen.Value
     SaveConfig()
     if Config.WhiteScreen then
@@ -564,11 +574,9 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
         local args = {...}
         if args[1] and args[1][1] then
             local cmd = args[1][1][1]
-            -- ดัก Summon
             if cmd == "\226\129\130J" then
                 SummonArgs = {unpack(args)}
             end
-            -- ดัก Sell CMD อัตโนมัติ
             if (cmd == "\226\129\130E" or cmd == "\226\129\130K") and args[1][1][2] then
                 SellCmd = cmd
             end
@@ -579,18 +587,29 @@ end))
 
 -- Auto Skip Loop
 spawn(function()
+    local lastVisible = false
     while true do
-        wait(5)
-        if Options.AutoSkip.Value then
+        wait(0.3)
+        if Config.AutoSkip then
             pcall(function()
-                local args = {
-                    [1] = {
-                        [1] = {
-                            [1] = "\226\129\130("
-                        }
-                    }
-                }
-                Remote:FireServer(unpack(args))
+                local match = player.PlayerGui:FindFirstChild("Match")
+                if match then
+                    local tf = match:FindFirstChild("TopFrame")
+                    local sw = tf and tf:FindFirstChild("SkipWave")
+                    if sw then
+                        if sw.Visible and not lastVisible then
+                            local args = {
+                                [1] = {
+                                    [1] = {
+                                        [1] = "\226\129\130("
+                                    }
+                                }
+                            }
+                            Remote:FireServer(unpack(args))
+                        end
+                        lastVisible = sw.Visible
+                    end
+                end
             end)
         end
     end
@@ -600,7 +619,7 @@ end)
 spawn(function()
     while true do
         wait(2)
-        if Options.AutoQueue.Value then
+        if Config.AutoQueue then
             local char = player.Character or player.CharacterAdded:Wait()
             local hrp = char:WaitForChild("HumanoidRootPart")
             local humanoid = char:WaitForChild("Humanoid")
@@ -685,7 +704,7 @@ end)
 spawn(function()
     while true do
         wait(1)
-        if Options.AutoSummon.Value then
+        if Config.AutoSummon then
             if SummonArgs then
                 pcall(function()
                     Remote:FireServer(unpack(SummonArgs))
@@ -719,3 +738,8 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig()
+
+if Config.AutoHide then
+    wait(1)
+    ToggleUI()
+end
