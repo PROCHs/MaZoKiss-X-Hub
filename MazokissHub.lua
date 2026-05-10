@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
+local VIS = game:GetService("VirtualInputManager")
 
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
@@ -14,6 +15,7 @@ local Config = {
     AutoQueue = false,
     AutoSummon = false,
     WhiteScreen = false,
+    AutoHide = false,
     Webhook = "",
     SellBasic = false,
     SellUncommon = false,
@@ -34,6 +36,12 @@ local function SaveConfig()
             writefile(ConfigName, HttpService:JSONEncode(Config))
         end
     end)
+end
+
+local function ToggleUI()
+    VIS:SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
+    task.wait(0.1)
+    VIS:SendKeyEvent(false, Enum.KeyCode.LeftControl, false, game)
 end
 
 --========================
@@ -143,16 +151,11 @@ local function GetRarity(unit)
     if not rg then return nil end
     local colorStr = tostring(rg.Color)
 
-    if colorStr:find("0.890196") then
-        return "Basic"
-    elseif colorStr:find("0.615686") then
-        return "Legendary"
-    elseif colorStr:find("0 0.85098 0") then
-        return "Epic"
-    elseif colorStr:find("0 0 0.85098") then
-        return "Rare"
-    elseif colorStr:find("0 0 1 0 0 1 0 0.694118 0 0") then
-        return "Uncommon"
+    if colorStr:find("0.890196") then return "Basic"
+    elseif colorStr:find("0.615686") then return "Legendary"
+    elseif colorStr:find("0 0.85098 0") then return "Epic"
+    elseif colorStr:find("0 0 0.85098") then return "Rare"
+    elseif colorStr:find("0 0 1 0 0 1 0 0.694118 0 0") then return "Uncommon"
     end
     return nil
 end
@@ -214,7 +217,6 @@ local function SellUnits()
         for j = i, math.min(i + chunkSize - 1, #sellList) do
             chunk[j - i + 1] = sellList[j]
         end
-
         pcall(function()
             local args = {
                 [1] = {
@@ -227,7 +229,6 @@ local function SellUnits()
             ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args))
             totalSold = totalSold + #chunk
         end)
-
         wait(0.3)
     end
 
@@ -282,10 +283,22 @@ Tabs.Main:AddParagraph({
     Content = "Toilet Tower Defense Farm Script"
 })
 
-Tabs.Main:AddParagraph({
+Tabs.Main:AddButton({
     Title = "Toggle UI",
-    Content = "กด LeftCtrl เพื่อเปิด/ปิด UI"
+    Description = "เปิด/ปิด UI",
+    Callback = function()
+        ToggleUI()
+    end
 })
+
+Tabs.Main:AddToggle("AutoHide", {
+    Title = "Auto Hide UI",
+    Description = "ซ่อน UI อัตโนมัติตอนโหลดสคริปต์",
+    Default = Config.AutoHide
+}):OnChanged(function()
+    Config.AutoHide = Options.AutoHide.Value
+    SaveConfig()
+end)
 
 --========================
 -- FARM TAB
@@ -487,30 +500,41 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
     return oldNamecall(self, ...)
 end))
 
+-- Auto Skip Loop
 spawn(function()
+    local lastVisible = false
     while true do
-        wait(5)
-        if Options.AutoSkip.Value then
-            if not workspace:FindFirstChild("Lifts") then
-                pcall(function()
-                    local args = {
-                        [1] = {
-                            [1] = {
-                                [1] = "\226\129\130("
+        wait(0.3)
+        if Config.AutoSkip then
+            pcall(function()
+                local match = player.PlayerGui:FindFirstChild("Match")
+                if match then
+                    local tf = match:FindFirstChild("TopFrame")
+                    local sw = tf and tf:FindFirstChild("SkipWave")
+                    if sw then
+                        if sw.Visible and not lastVisible then
+                            local args = {
+                                [1] = {
+                                    [1] = {
+                                        [1] = "\226\129\130("
+                                    }
+                                }
                             }
-                        }
-                    }
-                    Remote:FireServer(unpack(args))
-                end)
-            end
+                            Remote:FireServer(unpack(args))
+                        end
+                        lastVisible = sw.Visible
+                    end
+                end
+            end)
         end
     end
 end)
 
+-- Auto Queue Loop
 spawn(function()
     while true do
         wait(2)
-        if Options.AutoQueue.Value then
+        if Config.AutoQueue then
             local char = player.Character or player.CharacterAdded:Wait()
             local hrp = char:WaitForChild("HumanoidRootPart")
             local humanoid = char:WaitForChild("Humanoid")
@@ -561,10 +585,11 @@ spawn(function()
     end
 end)
 
+-- Auto Summon Loop
 spawn(function()
     while true do
         wait(1)
-        if Options.AutoSummon.Value then
+        if Config.AutoSummon then
             if SummonArgs then
                 pcall(function()
                     Remote:FireServer(unpack(SummonArgs))
@@ -598,3 +623,8 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig()
+
+if Config.AutoHide then
+    wait(1)
+    ToggleUI()
+end
