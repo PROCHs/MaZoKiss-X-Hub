@@ -2,7 +2,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
-local VIS = game:GetService("VirtualInputManager")
 
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
@@ -15,13 +14,13 @@ local Config = {
     AutoQueue = false,
     AutoSummon = false,
     WhiteScreen = false,
-    AutoHide = false,
     Webhook = "",
     SellBasic = false,
     SellUncommon = false,
     SellRare = false,
     SellEpic = false,
-    SellLegendary = false
+    SellLegendary = false,
+    SellMythic = false
 }
 
 pcall(function()
@@ -36,12 +35,6 @@ local function SaveConfig()
             writefile(ConfigName, HttpService:JSONEncode(Config))
         end
     end)
-end
-
-local function ToggleUI()
-    VIS:SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
-    task.wait(0.1)
-    VIS:SendKeyEvent(false, Enum.KeyCode.LeftControl, false, game)
 end
 
 --========================
@@ -155,10 +148,13 @@ local function GetRarity(unit)
     elseif colorStr:find("0.615686") then return "Legendary"
     elseif colorStr:find("0 0.85098 0") then return "Epic"
     elseif colorStr:find("0 0 0.85098") then return "Rare"
-    elseif colorStr:find("0 0 1 0 0 1 0 0.694118 0 0") then return "Uncommon"
+    elseif colorStr:find("0 0 1 0 0 1 0 0.694118") then return "Uncommon"
+    elseif colorStr:find("0 1 0 0") then return "Mythic"
     end
     return nil
 end
+
+local SellCmd = "\226\129\130E"
 
 local function SellUnits()
     local lobby = player.PlayerGui:FindFirstChild("Lobby")
@@ -176,7 +172,7 @@ local function SellUnits()
     local unitList = unitFrame:FindFirstChild("UnitList")
     if not unitList then return end
 
-    local sellList = {}
+    local totalSold = 0
 
     for _, row in pairs(unitList:GetChildren()) do
         if row.Name:find("Row") then
@@ -189,47 +185,30 @@ local function SellUnits()
                             (rarity == "Uncommon"  and Config.SellUncommon) or
                             (rarity == "Rare"      and Config.SellRare) or
                             (rarity == "Epic"      and Config.SellEpic) or
-                            (rarity == "Legendary" and Config.SellLegendary)
+                            (rarity == "Legendary" and Config.SellLegendary) or
+                            (rarity == "Mythic"    and Config.SellMythic)
                         )
                         if shouldSell then
-                            table.insert(sellList, unit.Name)
+                            pcall(function()
+                                local args = {
+                                    [1] = {
+                                        [1] = {
+                                            [1] = SellCmd,
+                                            [2] = {
+                                                [1] = unit.Name
+                                            }
+                                        }
+                                    }
+                                }
+                                ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args))
+                                totalSold = totalSold + 1
+                                wait(0.2)
+                            end)
                         end
                     end
                 end
             end
         end
-    end
-
-    if #sellList == 0 then
-        Fluent:Notify({
-            Title = "Sell",
-            Content = "ไม่มี Unit ที่ต้องขายครับ",
-            Duration = 3
-        })
-        return
-    end
-
-    local chunkSize = 50
-    local totalSold = 0
-
-    for i = 1, #sellList, chunkSize do
-        local chunk = {}
-        for j = i, math.min(i + chunkSize - 1, #sellList) do
-            chunk[j - i + 1] = sellList[j]
-        end
-        pcall(function()
-            local args = {
-                [1] = {
-                    [1] = {
-                        [1] = "\226\129\130P",
-                        [2] = chunk
-                    }
-                }
-            }
-            ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args))
-            totalSold = totalSold + #chunk
-        end)
-        wait(0.3)
     end
 
     Fluent:Notify({
@@ -283,22 +262,10 @@ Tabs.Main:AddParagraph({
     Content = "Toilet Tower Defense Farm Script"
 })
 
-Tabs.Main:AddButton({
+Tabs.Main:AddParagraph({
     Title = "Toggle UI",
-    Description = "เปิด/ปิด UI",
-    Callback = function()
-        ToggleUI()
-    end
+    Content = "กด LeftCtrl เพื่อเปิด/ปิด UI"
 })
-
-Tabs.Main:AddToggle("AutoHide", {
-    Title = "Auto Hide UI",
-    Description = "ซ่อน UI อัตโนมัติตอนโหลดสคริปต์",
-    Default = Config.AutoHide
-}):OnChanged(function()
-    Config.AutoHide = Options.AutoHide.Value
-    SaveConfig()
-end)
 
 --========================
 -- FARM TAB
@@ -309,29 +276,32 @@ Tabs.Farm:AddParagraph({
     Content = "ฟังชั่นสำหรับ Farm อัตโนมัติ"
 })
 
-Tabs.Farm:AddToggle("AutoSkip", {
+local AutoSkipToggle = Tabs.Farm:AddToggle("AutoSkip", {
     Title = "Auto Skip",
     Description = "Skip Wave อัตโนมัติ",
     Default = Config.AutoSkip
-}):OnChanged(function()
+})
+AutoSkipToggle:OnChanged(function()
     Config.AutoSkip = Options.AutoSkip.Value
     SaveConfig()
 end)
 
-Tabs.Farm:AddToggle("AutoQueue", {
+local AutoQueueToggle = Tabs.Farm:AddToggle("AutoQueue", {
     Title = "Auto Queue",
     Description = "วาปเข้า Lift อัตโนมัติ",
     Default = Config.AutoQueue
-}):OnChanged(function()
+})
+AutoQueueToggle:OnChanged(function()
     Config.AutoQueue = Options.AutoQueue.Value
     SaveConfig()
 end)
 
-Tabs.Farm:AddToggle("AutoSummon", {
+local AutoSummonToggle = Tabs.Farm:AddToggle("AutoSummon", {
     Title = "Auto Summon",
     Description = "กด Summon ด้วยมือ 1 ครั้งก่อนเปิดครับ",
     Default = Config.AutoSummon
-}):OnChanged(function()
+})
+AutoSummonToggle:OnChanged(function()
     Config.AutoSummon = Options.AutoSummon.Value
     SaveConfig()
 end)
@@ -342,51 +312,66 @@ end)
 
 Tabs.Sell:AddParagraph({
     Title = "Sell Unit",
-    Content = "เลือก Rarity ที่อยากขาย แล้วกด Sell Now"
+    Content = "เลือก Rarity ที่อยากขาย แล้วกด Sell Now\nกด Sell ด้วยมือ 1 ครั้งก่อนใช้งานครับ"
 })
 
-Tabs.Sell:AddToggle("SellBasic", {
+local SellBasicToggle = Tabs.Sell:AddToggle("SellBasic", {
     Title = "Basic",
     Description = "ขาย Unit ระดับ Basic",
     Default = Config.SellBasic
-}):OnChanged(function()
+})
+SellBasicToggle:OnChanged(function()
     Config.SellBasic = Options.SellBasic.Value
     SaveConfig()
 end)
 
-Tabs.Sell:AddToggle("SellUncommon", {
+local SellUncommonToggle = Tabs.Sell:AddToggle("SellUncommon", {
     Title = "Uncommon",
     Description = "ขาย Unit ระดับ Uncommon",
     Default = Config.SellUncommon
-}):OnChanged(function()
+})
+SellUncommonToggle:OnChanged(function()
     Config.SellUncommon = Options.SellUncommon.Value
     SaveConfig()
 end)
 
-Tabs.Sell:AddToggle("SellRare", {
+local SellRareToggle = Tabs.Sell:AddToggle("SellRare", {
     Title = "Rare",
     Description = "ขาย Unit ระดับ Rare",
     Default = Config.SellRare
-}):OnChanged(function()
+})
+SellRareToggle:OnChanged(function()
     Config.SellRare = Options.SellRare.Value
     SaveConfig()
 end)
 
-Tabs.Sell:AddToggle("SellEpic", {
+local SellEpicToggle = Tabs.Sell:AddToggle("SellEpic", {
     Title = "Epic",
     Description = "ขาย Unit ระดับ Epic",
     Default = Config.SellEpic
-}):OnChanged(function()
+})
+SellEpicToggle:OnChanged(function()
     Config.SellEpic = Options.SellEpic.Value
     SaveConfig()
 end)
 
-Tabs.Sell:AddToggle("SellLegendary", {
+local SellLegendaryToggle = Tabs.Sell:AddToggle("SellLegendary", {
     Title = "Legendary",
     Description = "ขาย Unit ระดับ Legendary",
     Default = Config.SellLegendary
-}):OnChanged(function()
+})
+SellLegendaryToggle:OnChanged(function()
     Config.SellLegendary = Options.SellLegendary.Value
+    SaveConfig()
+end)
+
+local SellMythicToggle = Tabs.Sell:AddToggle("SellMythic", {
+    Title = "Mythic",
+    Description = "ขาย Unit ระดับ Mythic",
+    Default = Config.SellMythic
+})
+SellMythicToggle:OnChanged(function()
+    Config.SellMythic = Options.SellMythic.Value
     SaveConfig()
 end)
 
@@ -407,11 +392,12 @@ Tabs.Visual:AddParagraph({
     Content = "ปรับกราฟฟิคเพื่อเพิ่ม FPS"
 })
 
-Tabs.Visual:AddToggle("WhiteScreen", {
+local WhiteScreenToggle = Tabs.Visual:AddToggle("WhiteScreen", {
     Title = "White Screen / FPS Boost",
     Description = "ลด Graphic และทำให้จอขาวเพิ่ม FPS",
     Default = Config.WhiteScreen
-}):OnChanged(function()
+})
+WhiteScreenToggle:OnChanged(function()
     Config.WhiteScreen = Options.WhiteScreen.Value
     SaveConfig()
     if Config.WhiteScreen then
@@ -467,6 +453,89 @@ Tabs.Webhook:AddButton({
     end
 })
 
+Tabs.Webhook:AddButton({
+    Title = "Check Inventory",
+    Description = "ส่งรายงาน Unit ในกระเป๋าไปยัง Discord",
+    Callback = function()
+        if Config.Webhook == "" then
+            Fluent:Notify({
+                Title = "Error",
+                Content = "กรุณาใส่ Webhook URL ก่อนครับ",
+                Duration = 3
+            })
+            return
+        end
+
+        local lobby = player.PlayerGui:FindFirstChild("Lobby")
+        if not lobby then
+            Fluent:Notify({
+                Title = "Error",
+                Content = "ไม่เจอ Lobby UI กรุณาอยู่ในล็อบบี้ก่อนครับ",
+                Duration = 3
+            })
+            return
+        end
+
+        local unitList = lobby.UnitFrame.UnitList
+        local count = {
+            Basic = 0, Uncommon = 0, Rare = 0,
+            Epic = 0, Legendary = 0, Mythic = 0
+        }
+        local total = 0
+
+        for _, row in pairs(unitList:GetChildren()) do
+            if row.Name:find("Row") then
+                for _, unit in pairs(row:GetChildren()) do
+                    if unit:IsA("Frame") then
+                        local rarity = GetRarity(unit)
+                        if rarity and count[rarity] ~= nil then
+                            count[rarity] = count[rarity] + 1
+                            total = total + 1
+                        end
+                    end
+                end
+            end
+        end
+
+        pcall(function()
+            local data = {
+                ["embeds"] = {
+                    {
+                        ["title"] = "MaZoKiss X Hub | Inventory Report",
+                        ["color"] = 3447003,
+                        ["description"] =
+                            "**-> Profile :**\n" ..
+                            "┃ Username : `" .. player.Name .. "`\n\n" ..
+                            "**-> Unit ในกระเป๋า :**\n" ..
+                            "┃ 🔵 Basic : `" .. count.Basic .. "`\n" ..
+                            "┃ 🟢 Uncommon : `" .. count.Uncommon .. "`\n" ..
+                            "┃ 🟣 Rare : `" .. count.Rare .. "`\n" ..
+                            "┃ 🟠 Epic : `" .. count.Epic .. "`\n" ..
+                            "┃ 🟡 Legendary : `" .. count.Legendary .. "`\n" ..
+                            "┃ 🔴 Mythic : `" .. count.Mythic .. "`\n\n" ..
+                            "┃ 📦 Total : `" .. total .. "`",
+                        ["footer"] = {
+                            ["text"] = "MaZoKiss X Hub"
+                        }
+                    }
+                }
+            }
+            req({
+                Url = Config.Webhook,
+                Method = "POST",
+                Headers = { ["Content-Type"] = "application/json" },
+                Body = HttpService:JSONEncode(data)
+            })
+        end)
+
+        Fluent:Notify({
+            Title = "Webhook",
+            Content = "ส่ง Inventory Report สำเร็จครับ ✅",
+            Duration = 3
+        })
+    end
+})
+
 --========================
 -- SETTINGS TAB
 --========================
@@ -493,8 +562,16 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if method == "FireServer" and self == Remote then
         local args = {...}
-        if args[1] and args[1][1] and args[1][1][1] == "\226\129\130J" then
-            SummonArgs = {unpack(args)}
+        if args[1] and args[1][1] then
+            local cmd = args[1][1][1]
+            -- ดัก Summon
+            if cmd == "\226\129\130J" then
+                SummonArgs = {unpack(args)}
+            end
+            -- ดัก Sell CMD อัตโนมัติ
+            if (cmd == "\226\129\130E" or cmd == "\226\129\130K") and args[1][1][2] then
+                SellCmd = cmd
+            end
         end
     end
     return oldNamecall(self, ...)
@@ -502,29 +579,18 @@ end))
 
 -- Auto Skip Loop
 spawn(function()
-    local lastVisible = false
     while true do
-        wait(0.3)
-        if Config.AutoSkip then
+        wait(5)
+        if Options.AutoSkip.Value then
             pcall(function()
-                local match = player.PlayerGui:FindFirstChild("Match")
-                if match then
-                    local tf = match:FindFirstChild("TopFrame")
-                    local sw = tf and tf:FindFirstChild("SkipWave")
-                    if sw then
-                        if sw.Visible and not lastVisible then
-                            local args = {
-                                [1] = {
-                                    [1] = {
-                                        [1] = "\226\129\130("
-                                    }
-                                }
-                            }
-                            Remote:FireServer(unpack(args))
-                        end
-                        lastVisible = sw.Visible
-                    end
-                end
+                local args = {
+                    [1] = {
+                        [1] = {
+                            [1] = "\226\129\130("
+                        }
+                    }
+                }
+                Remote:FireServer(unpack(args))
             end)
         end
     end
@@ -534,7 +600,7 @@ end)
 spawn(function()
     while true do
         wait(2)
-        if Config.AutoQueue then
+        if Options.AutoQueue.Value then
             local char = player.Character or player.CharacterAdded:Wait()
             local hrp = char:WaitForChild("HumanoidRootPart")
             local humanoid = char:WaitForChild("Humanoid")
@@ -545,6 +611,28 @@ spawn(function()
                     pcall(function()
                         if Config.Webhook ~= "" then
                             local coins = player.leaderstats.Coins.Value
+                            local count = {
+                                Basic = 0, Uncommon = 0, Rare = 0,
+                                Epic = 0, Legendary = 0, Mythic = 0
+                            }
+                            local total = 0
+                            local lobby = player.PlayerGui:FindFirstChild("Lobby")
+                            if lobby then
+                                local unitList = lobby.UnitFrame.UnitList
+                                for _, row in pairs(unitList:GetChildren()) do
+                                    if row.Name:find("Row") then
+                                        for _, unit in pairs(row:GetChildren()) do
+                                            if unit:IsA("Frame") then
+                                                local rarity = GetRarity(unit)
+                                                if rarity and count[rarity] ~= nil then
+                                                    count[rarity] = count[rarity] + 1
+                                                    total = total + 1
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
                             local data = {
                                 ["embeds"] = {
                                     {
@@ -554,7 +642,15 @@ spawn(function()
                                             "**-> Profile :**\n" ..
                                             "┃ Username : `" .. player.Name .. "`\n\n" ..
                                             "**-> Coins Collected Result :**\n" ..
-                                            "┃ Coins : `" .. tostring(coins) .. "`",
+                                            "┃ Coins : `" .. tostring(coins) .. "`\n\n" ..
+                                            "**-> Unit ในกระเป๋า :**\n" ..
+                                            "┃ 🔵 Basic : `" .. count.Basic .. "`\n" ..
+                                            "┃ 🟢 Uncommon : `" .. count.Uncommon .. "`\n" ..
+                                            "┃ 🟣 Rare : `" .. count.Rare .. "`\n" ..
+                                            "┃ 🟠 Epic : `" .. count.Epic .. "`\n" ..
+                                            "┃ 🟡 Legendary : `" .. count.Legendary .. "`\n" ..
+                                            "┃ 🔴 Mythic : `" .. count.Mythic .. "`\n" ..
+                                            "┃ 📦 Total : `" .. total .. "`",
                                         ["footer"] = {
                                             ["text"] = "Status: กลับสู่ลอบบี้เรียบร้อย"
                                         }
@@ -589,7 +685,7 @@ end)
 spawn(function()
     while true do
         wait(1)
-        if Config.AutoSummon then
+        if Options.AutoSummon.Value then
             if SummonArgs then
                 pcall(function()
                     Remote:FireServer(unpack(SummonArgs))
@@ -623,8 +719,3 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig()
-
-if Config.AutoHide then
-    wait(1)
-    ToggleUI()
-end
