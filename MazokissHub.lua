@@ -177,7 +177,7 @@ local function SellUnits()
     if not SellCmd then
         Fluent:Notify({
             Title = "Sell",
-            Content = "กรุณากด Sell ด้วยมือ 1 ครั้งก่อนครับ",
+            Content = "กรุณากด Sell ด้วยมือก่อน 1 ครั้ง",
             Duration = 3
         })
         return
@@ -247,7 +247,7 @@ local function SellUnits()
 
     Fluent:Notify({
         Title = "Sell",
-        Content = "ขายไปทั้งหมด " .. #sellList .. " ตัวครับ ✅",
+        Content = "ขายไปทั้งหมด " .. #sellList .. " ตัว ✅",
         Duration = 3
     })
 end
@@ -342,7 +342,7 @@ end)
 
 Tabs.Farm:AddToggle("AutoSummon", {
     Title = "Auto Summon",
-    Description = "กด Summon ด้วยมือ 1 ครั้งก่อนเปิดครับ",
+    Description = "กด Summon ด้วยมือ 1 ครั้งก่อนเปิด",
     Default = Config.AutoSummon
 }):OnChanged(function()
     Config.AutoSummon = Options.AutoSummon.Value
@@ -359,7 +359,7 @@ Tabs.Sell:AddParagraph({
 })
 
 Tabs.Sell:AddToggle("SellBasic", {
-    Title = "Basic",
+    Title = "⚪Basic",
     Description = "ขาย Unit ระดับ Basic",
     Default = Config.SellBasic
 }):OnChanged(function()
@@ -368,7 +368,7 @@ Tabs.Sell:AddToggle("SellBasic", {
 end)
 
 Tabs.Sell:AddToggle("SellUncommon", {
-    Title = "Uncommon",
+    Title = "🟢Uncommon",
     Description = "ขาย Unit ระดับ Uncommon",
     Default = Config.SellUncommon
 }):OnChanged(function()
@@ -377,7 +377,7 @@ Tabs.Sell:AddToggle("SellUncommon", {
 end)
 
 Tabs.Sell:AddToggle("SellRare", {
-    Title = "Rare",
+    Title = "🔵Rare",
     Description = "ขาย Unit ระดับ Rare",
     Default = Config.SellRare
 }):OnChanged(function()
@@ -386,7 +386,7 @@ Tabs.Sell:AddToggle("SellRare", {
 end)
 
 Tabs.Sell:AddToggle("SellEpic", {
-    Title = "Epic",
+    Title = "🟣Epic",
     Description = "ขาย Unit ระดับ Epic",
     Default = Config.SellEpic
 }):OnChanged(function()
@@ -395,7 +395,7 @@ Tabs.Sell:AddToggle("SellEpic", {
 end)
 
 Tabs.Sell:AddToggle("SellLegendary", {
-    Title = "Legendary",
+    Title = "🟡Legendary",
     Description = "ขาย Unit ระดับ Legendary",
     Default = Config.SellLegendary
 }):OnChanged(function()
@@ -404,7 +404,7 @@ Tabs.Sell:AddToggle("SellLegendary", {
 end)
 
 Tabs.Sell:AddToggle("SellMythic", {
-    Title = "Mythic",
+    Title = "🔴Mythic",
     Description = "ขาย Unit ระดับ Mythic",
     Default = Config.SellMythic
 }):OnChanged(function()
@@ -413,7 +413,7 @@ Tabs.Sell:AddToggle("SellMythic", {
 end)
 
 Tabs.Sell:AddToggle("SellExclusive", {
-    Title = "Exclusive",
+    Title = "💜Exclusive",
     Description = "ขาย Unit ระดับ Exclusive",
     Default = Config.SellExclusive
 }):OnChanged(function()
