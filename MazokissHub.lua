@@ -414,6 +414,7 @@ end)
 
 Tabs.Sell:AddToggle("SellExclusive", {
     Title = "💜 Exclusive",
+    Description = "ขาย Unit ระดับ Exclusive",
     Default = Config.SellExclusive
 }):OnChanged(function()
     Config.SellExclusive = Options.SellExclusive.Value
