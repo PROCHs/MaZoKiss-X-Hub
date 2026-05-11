@@ -22,7 +22,8 @@ local Config = {
     SellRare = false,
     SellEpic = false,
     SellLegendary = false,
-    SellMythic = false
+    SellMythic = false,
+    SellExclusive = false
 }
 
 pcall(function()
@@ -150,14 +151,22 @@ local function GetRarity(unit)
     if not tf then return nil end
     local rg = tf:FindFirstChild("RarityGradient")
     if not rg then return nil end
-    local colorStr = tostring(rg.Color)
+    local c = tostring(rg.Color)
 
-    if colorStr:find("0.890196") then return "Basic"
-    elseif colorStr:find("0.615686") then return "Legendary"
-    elseif colorStr:find("0 0.85098 0") then return "Epic"
-    elseif colorStr:find("0 0 0.85098") then return "Rare"
-    elseif colorStr:find("0 0 1 0 0 1 0 0.694118") then return "Uncommon"
-    elseif colorStr:find("0 1 0 0") then return "Mythic"
+    if c:find("0.890196") then
+        return "Basic"
+    elseif c:find("0 0 1 0 0 1 0 0.694118") then
+        return "Uncommon"
+    elseif c:find("0 0 0.85098 1") then
+        return "Rare"
+    elseif c:find("0 0.85098 0.576471") then
+        return "Exclusive"
+    elseif c:find("0 0.85098 0 1") then
+        return "Epic"
+    elseif c:find("0.615686") then
+        return "Legendary"
+    elseif c:find("0 1 0 0") then
+        return "Mythic"
     end
     return nil
 end
@@ -203,7 +212,8 @@ local function SellUnits()
                             (rarity == "Rare"      and Config.SellRare) or
                             (rarity == "Epic"      and Config.SellEpic) or
                             (rarity == "Legendary" and Config.SellLegendary) or
-                            (rarity == "Mythic"    and Config.SellMythic)
+                            (rarity == "Mythic"    and Config.SellMythic) or
+                            (rarity == "Exclusive" and Config.SellExclusive)
                         )
                         if shouldSell then
                             table.insert(sellList, unit.Name)
@@ -402,6 +412,15 @@ Tabs.Sell:AddToggle("SellMythic", {
     SaveConfig()
 end)
 
+Tabs.Sell:AddToggle("SellExclusive", {
+    Title = "Exclusive",
+    Description = "ขาย Unit ระดับ Exclusive",
+    Default = Config.SellExclusive
+}):OnChanged(function()
+    Config.SellExclusive = Options.SellExclusive.Value
+    SaveConfig()
+end)
+
 Tabs.Sell:AddButton({
     Title = "Sell Now",
     Description = "ขาย Unit ที่เลือกทั้งหมดทันที",
@@ -504,8 +523,8 @@ Tabs.Webhook:AddButton({
 
         local unitList = lobby.UnitFrame.UnitList
         local count = {
-            Basic = 0, Uncommon = 0, Rare = 0,
-            Epic = 0, Legendary = 0, Mythic = 0
+            Basic = 0, Uncommon = 0, Rare = 0, Epic = 0,
+            Legendary = 0, Mythic = 0, Exclusive = 0
         }
         local total = 0
 
@@ -538,7 +557,8 @@ Tabs.Webhook:AddButton({
                             "┃ 🟣 Rare : `" .. count.Rare .. "`\n" ..
                             "┃ 🟠 Epic : `" .. count.Epic .. "`\n" ..
                             "┃ 🟡 Legendary : `" .. count.Legendary .. "`\n" ..
-                            "┃ 🔴 Mythic : `" .. count.Mythic .. "`\n\n" ..
+                            "┃ 🔴 Mythic : `" .. count.Mythic .. "`\n" ..
+                            "┃ 💜 Exclusive : `" .. count.Exclusive .. "`\n\n" ..
                             "┃ 📦 Total : `" .. total .. "`",
                         ["footer"] = {
                             ["text"] = "MaZoKiss X Hub"
@@ -644,8 +664,8 @@ spawn(function()
                         if Config.Webhook ~= "" then
                             local coins = player.leaderstats.Coins.Value
                             local count = {
-                                Basic = 0, Uncommon = 0, Rare = 0,
-                                Epic = 0, Legendary = 0, Mythic = 0
+                                Basic = 0, Uncommon = 0, Rare = 0, Epic = 0,
+                                Legendary = 0, Mythic = 0, Exclusive = 0
                             }
                             local total = 0
                             local lobby = player.PlayerGui:FindFirstChild("Lobby")
@@ -682,6 +702,7 @@ spawn(function()
                                             "┃ 🟠 Epic : `" .. count.Epic .. "`\n" ..
                                             "┃ 🟡 Legendary : `" .. count.Legendary .. "`\n" ..
                                             "┃ 🔴 Mythic : `" .. count.Mythic .. "`\n" ..
+                                            "┃ 💜 Exclusive : `" .. count.Exclusive .. "`\n" ..
                                             "┃ 📦 Total : `" .. total .. "`",
                                         ["footer"] = {
                                             ["text"] = "Status: กลับสู่ลอบบี้เรียบร้อย"
