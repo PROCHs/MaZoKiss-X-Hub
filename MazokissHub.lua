@@ -162,9 +162,18 @@ local function GetRarity(unit)
     return nil
 end
 
-local SellCmd = "\226\129\130E"
+local SellCmd = nil
 
 local function SellUnits()
+    if not SellCmd then
+        Fluent:Notify({
+            Title = "Sell",
+            Content = "กรุณากด Sell ด้วยมือ 1 ครั้งก่อนครับ",
+            Duration = 3
+        })
+        return
+    end
+
     local lobby = player.PlayerGui:FindFirstChild("Lobby")
     if not lobby then
         Fluent:Notify({
@@ -180,7 +189,7 @@ local function SellUnits()
     local unitList = unitFrame:FindFirstChild("UnitList")
     if not unitList then return end
 
-    local totalSold = 0
+    local sellList = {}
 
     for _, row in pairs(unitList:GetChildren()) do
         if row.Name:find("Row") then
@@ -197,21 +206,7 @@ local function SellUnits()
                             (rarity == "Mythic"    and Config.SellMythic)
                         )
                         if shouldSell then
-                            pcall(function()
-                                local args = {
-                                    [1] = {
-                                        [1] = {
-                                            [1] = SellCmd,
-                                            [2] = {
-                                                [1] = unit.Name
-                                            }
-                                        }
-                                    }
-                                }
-                                ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args))
-                                totalSold = totalSold + 1
-                                wait(0.2)
-                            end)
+                            table.insert(sellList, unit.Name)
                         end
                     end
                 end
@@ -219,9 +214,30 @@ local function SellUnits()
         end
     end
 
+    if #sellList == 0 then
+        Fluent:Notify({
+            Title = "Sell",
+            Content = "ไม่มี Unit ที่ต้องขายครับ",
+            Duration = 3
+        })
+        return
+    end
+
+    pcall(function()
+        local args = {
+            [1] = {
+                [1] = {
+                    [1] = SellCmd,
+                    [2] = sellList
+                }
+            }
+        }
+        ReplicatedStorage.NetworkingContainer.DataRemote:FireServer(unpack(args))
+    end)
+
     Fluent:Notify({
         Title = "Sell",
-        Content = "ขายไปทั้งหมด " .. totalSold .. " ตัวครับ ✅",
+        Content = "ขายไปทั้งหมด " .. #sellList .. " ตัวครับ ✅",
         Duration = 3
     })
 end
@@ -577,7 +593,9 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
             if cmd == "\226\129\130J" then
                 SummonArgs = {unpack(args)}
             end
-            if (cmd == "\226\129\130E" or cmd == "\226\129\130K") and args[1][1][2] then
+            if cmd ~= "\226\129\130J" and
+               cmd ~= "\226\129\130(" and
+               args[1][1][2] then
                 SellCmd = cmd
             end
         end
@@ -598,14 +616,9 @@ spawn(function()
                     local sw = tf and tf:FindFirstChild("SkipWave")
                     if sw then
                         if sw.Visible and not lastVisible then
-                            local args = {
-                                [1] = {
-                                    [1] = {
-                                        [1] = "\226\129\130("
-                                    }
-                                }
-                            }
-                            Remote:FireServer(unpack(args))
+                            Remote:FireServer(unpack({
+                                [1] = { [1] = { [1] = "\226\129\130(" } }
+                            }))
                         end
                         lastVisible = sw.Visible
                     end
