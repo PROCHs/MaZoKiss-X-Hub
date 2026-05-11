@@ -696,10 +696,10 @@ spawn(function()
                                             "**-> Coins Collected Result :**\n" ..
                                             "┃ Coins : `" .. tostring(coins) .. "`\n\n" ..
                                             "**-> Unit ในกระเป๋า :**\n" ..
-                                            "┃ 🔵 Basic : `" .. count.Basic .. "`\n" ..
+                                            "┃ ⚪ Basic : `" .. count.Basic .. "`\n" ..
                                             "┃ 🟢 Uncommon : `" .. count.Uncommon .. "`\n" ..
-                                            "┃ 🟣 Rare : `" .. count.Rare .. "`\n" ..
-                                            "┃ 🟠 Epic : `" .. count.Epic .. "`\n" ..
+                                            "┃ 🔵 Rare : `" .. count.Rare .. "`\n" ..
+                                            "┃ 🟣 Epic : `" .. count.Epic .. "`\n" ..
                                             "┃ 🟡 Legendary : `" .. count.Legendary .. "`\n" ..
                                             "┃ 🔴 Mythic : `" .. count.Mythic .. "`\n" ..
                                             "┃ 💜 Exclusive : `" .. count.Exclusive .. "`\n" ..
